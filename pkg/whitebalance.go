@@ -1,35 +1,40 @@
 package imageprocessing
 
 import (
-	"fmt"
-	"time"
+	"image"
+	"sort"
 )
 
-func WhiteBalanceHSVImage(img *HSVImage, multiplier float64) error {
+// based off https://adadevelopment.github.io/gdal/white-balance-gdal.html
+func WhiteBalanceRGBImage(img *image.NRGBA, percentForBalance float64) error {
 
-	// quick hack LUT.. turns out 7 times slower... will come back to this.
-	//satLUT := make(map[float64]float64)
-	l := len(img.Data)
-	fmt.Printf("length %d\n", l)
-	pix := img.Data
-	start := time.Now()
-	//var newSat float64
-	//var ok bool
-	for i := 0; i < l; i += 4 {
+	redBytes := getBytes(0, img)
 
-		/* LUT is 7 times slower :(
-		curSat := pix[i+1]
-		if newSat,ok = satLUT[curSat]; !ok {
-			newSat = curSat * multiplier
-			satLUT[curSat] = newSat
-		}
-		pix[i+1] = newSat */
-		
-		pix[i+1] *= multiplier
-	}
-	end := time.Now()
-	fmt.Printf("saturation processed in %d ms\n", end.Sub(start).Milliseconds())
+	sort.Slice(redBytes, func(i int, j int) bool {
+		return redBytes[i]<redBytes[j]
+	})
+
+	percentForBalance := 0.6
+	perc05 := Percentile(redBytes, percentForBalance)
 
 	return nil
 }
 
+func Percentile( sortedBytes []uint8, percentile float64 ) []uint8 {
+
+}
+
+// probably get rid of this...  to inefficient
+func getBytes(offset int, img *image.NRGBA) []uint8 {
+	pix := img.Pix
+	l := len(pix)
+	colourBand := make([]uint8, l/4)
+	idx := 0
+	for i:=0; i<l; i += 4 {
+		v := pix[i+offset]
+		colourBand[idx] = v
+		idx++
+	}
+
+	return colourBand
+}
