@@ -2,7 +2,6 @@ package imageprocessing
 
 import (
 	"fmt"
-	"github.com/pkg/profile"
 	"image"
 	"time"
 )
@@ -22,7 +21,7 @@ type RGBType struct {
 var rgbToHSVLUT [256 * 256 * 256]HSVType
 
 //var hsvToRGBLUT map[HSVType]RGBType
-var hsvToRGBLUT map[float64]RGBType
+var hsvToRGBLUT map[uint64]RGBType
 
 func init() {
 	// rgbToHSL
@@ -33,7 +32,7 @@ func init() {
 	fmt.Printf("generateLUT took %d ms\n", end.Sub(start).Milliseconds())
 
 	//hsvToRGBLUT = make(map[HSVType]RGBType)
-	hsvToRGBLUT = make(map[float64]RGBType)
+	hsvToRGBLUT = make(map[uint64]RGBType)
 }
 
 func generateLUT() {
@@ -253,7 +252,7 @@ func ConvertRGBToHSVImage(img *image.NRGBA) (*HSVImage, error) {
 }
 
 func ConvertHSVToRGBImage(img *HSVImage) (*image.NRGBA, error) {
-	p := profile.Start(profile.CPUProfile, profile.ProfilePath("."))
+	//p := profile.Start(profile.CPUProfile, profile.ProfilePath("."))
 
 	rgbImg := image.NewNRGBA(image.Rect(0, 0, img.Width, img.Height))
 
@@ -267,8 +266,9 @@ func ConvertHSVToRGBImage(img *HSVImage) (*image.NRGBA, error) {
 	nonCache := 0
 	for i := 0; i < l; i += 4 {
 		//hsv := HSVType{H:origPix[i], S:origPix[i+1], V:origPix[i+2]}
-		index := origPix[i]*1000000000 + origPix[i+1]*10000000 + origPix[i+2]
-		//index := origPix[i] << 31 + origPix[i+1]*10000000 + origPix[i+2]*100000
+
+		//index := origPix[i]*1000000000 + origPix[i+1]*10000000 + origPix[i+2]
+		index := uint64(origPix[i]*1000000000)  + uint64(origPix[i+1]*10000000) + uint64(origPix[i+2]*100000)
 		if rgb, ok = hsvToRGBLUT[index]; !ok {
 			r, g, b := hslToRGB(origPix[i], origPix[i+1], origPix[i+2])
 			rgb.R = r
@@ -287,6 +287,6 @@ func ConvertHSVToRGBImage(img *HSVImage) (*image.NRGBA, error) {
 	}
 
 	fmt.Printf("ConvertHSVToRGBImage cached %d : noncached %d\n", cached, nonCache)
-	p.Stop()
+	//p.Stop()
 	return rgbImg, nil
 }
